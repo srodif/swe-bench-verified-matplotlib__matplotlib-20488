@@ -1563,9 +1563,11 @@ class LogNorm(Normalize):
         on some platforms/numpy versions, so we cap the maximum value to
         a reasonable limit.
         """
-        # Maximum safe value: 1e100 gives log10(1e100) = 100, which is safe
-        # This is much larger than any practical data range
-        max_safe_value = 1e100
+        # Maximum safe value for log operations. Use 1e15 to be conservative
+        # while still supporting very large data ranges. This prevents issues
+        # with values like 1e20 that can cause "Invalid vmin or vmax" errors
+        # in some NumPy versions.
+        max_safe_value = 1e15
         
         if self.vmax is not None and self.vmax > max_safe_value:
             self.vmax = max_safe_value
