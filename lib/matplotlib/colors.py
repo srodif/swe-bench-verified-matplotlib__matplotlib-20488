@@ -1546,10 +1546,33 @@ class LogNorm(Normalize):
     def autoscale(self, A):
         # docstring inherited.
         super().autoscale(np.ma.masked_less_equal(A, 0, copy=False))
+        # Ensure vmin and vmax are within safe bounds for log operations
+        self._clip_to_safe_log_range()
 
     def autoscale_None(self, A):
         # docstring inherited.
         super().autoscale_None(np.ma.masked_less_equal(A, 0, copy=False))
+        # Ensure vmin and vmax are within safe bounds for log operations
+        self._clip_to_safe_log_range()
+    
+    def _clip_to_safe_log_range(self):
+        """
+        Clip vmin and vmax to safe ranges for logarithmic operations.
+        
+        Very large values can cause numerical instability in log transforms
+        on some platforms/numpy versions, so we cap the maximum value to
+        a reasonable limit.
+        """
+        # Maximum safe value: 1e100 gives log10(1e100) = 100, which is safe
+        # This is much larger than any practical data range
+        max_safe_value = 1e100
+        
+        if self.vmax is not None and self.vmax > max_safe_value:
+            self.vmax = max_safe_value
+        
+        # Also ensure vmin is positive and reasonable for log scale
+        if self.vmin is not None and self.vmin <= 0:
+            self.vmin = 1e-100  # Very small positive value
 
 
 @_make_norm_from_scale(
